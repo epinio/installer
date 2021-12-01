@@ -23,6 +23,23 @@ jobs:
         with:
           go-version: 1.17
       -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      # -
+      #   name: Login to DockerHub
+      #   uses: docker/login-action@v1
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #     password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      -
+        name: Login to GitHub Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
@@ -31,3 +48,7 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HELM_VERSION: "3.7.1"
+          HELM_CHECKSUM: "6cd6cad4b97e10c33c978ff3ac97bb42b68f79766f1d2284cfd62ec04cd177f4"
+          KUBECTL_VERSION: "1.22.4"
+          KUBECTL_CHECKSUM: "9f74f2fa7ee32ad07e17211725992248470310ca1988214518806b39b1dad9f0"

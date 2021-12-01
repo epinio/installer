@@ -10,7 +10,7 @@ import (
 var _ = Describe("InstallManifest", func() {
 	Describe("Loading", func() {
 		It("loads the manifest from a file", func() {
-			m, err := installer.Load(assetPath("install-manifest.yml"))
+			m, err := installer.Load(assetPath("test-manifest.yml"))
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(m.Components).To(HaveLen(10))

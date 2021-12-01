@@ -53,7 +53,7 @@ components:
     type: helm
     source:
       name: epinio
-      path: https://github.com/epinio/epinio-helm-chart/releases/download/epinio-0.1.20/epinio-0.1.20.tgz
+      path: ../epinio/helm/chart/epinio/
     values:
       - name: email
         value: "epinio@epinio.io"
