@@ -1,10 +1,8 @@
 package kubernetes
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -13,8 +11,6 @@ import (
 	kubeconfig "github.com/epinio/epinio/helpers/kubernetes/config"
 	"github.com/epinio/epinio/helpers/termui"
 
-	tekton "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
-	tektonv1beta1 "github.com/tektoncd/pipeline/pkg/client/clientset/versioned/typed/pipeline/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	apibatchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -27,27 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/remotecommand"
 
 	// https://github.com/kubernetes/client-go/issues/345
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-)
-
-const (
-	// APISGroupName is the api name used for epinio
-	APISGroupName = "epinio.suse.org"
-)
-
-var (
-	EpinioDeploymentLabelKey   = fmt.Sprintf("%s/%s", APISGroupName, "deployment")
-	EpinioDeploymentLabelValue = "true"
-	EpinioNamespaceLabelKey    = "app.kubernetes.io/component"
-	EpinioNamespaceLabelValue  = "epinio-namespace"
-	EpinioAPISecretLabelKey    = fmt.Sprintf("%s/%s", APISGroupName, "api-user-credentials")
-	EpinioAPISecretLabelValue  = "true"
 )
 
 // Memoization of GetCluster
@@ -92,21 +72,6 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 	return clusterMemo, nil
 }
 
-// ClientApp returns a dynamic namespaced client for the app resource
-func (c *Cluster) ClientApp() (dynamic.NamespaceableResourceInterface, error) {
-	cs, err := dynamic.NewForConfig(c.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	gvr := schema.GroupVersionResource{
-		Group:    "application.epinio.io",
-		Version:  "v1",
-		Resource: "apps",
-	}
-	return cs.Resource(gvr), nil
-}
-
 // ClientCertManager returns a dynamic namespaced client for the cert manager resource
 func (c *Cluster) ClientCertManager() (dynamic.NamespaceableResourceInterface, error) {
 	gvr := schema.GroupVersionResource{
@@ -120,31 +85,6 @@ func (c *Cluster) ClientCertManager() (dynamic.NamespaceableResourceInterface, e
 		return nil, err
 	}
 	return dynamicClient.Resource(gvr), nil
-}
-
-// ClientCertificate returns a dynamic namespaced client for the cert manager
-// certificate resource
-func (c *Cluster) ClientCertificate() (dynamic.NamespaceableResourceInterface, error) {
-	gvr := schema.GroupVersionResource{
-		Group:    "cert-manager.io",
-		Version:  "v1",
-		Resource: "certificates",
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(c.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-	return dynamicClient.Resource(gvr), nil
-}
-
-// ClientTekton returns a dynamic namespaced client for the tekton resources
-func (c *Cluster) ClientTekton() (tektonv1beta1.TektonV1beta1Interface, error) {
-	cs, err := tekton.NewForConfig(c.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-	return cs.TektonV1beta1(), nil
 }
 
 // IsPodRunning returns a condition function that indicates whether the given pod is
@@ -206,13 +146,6 @@ func (c *Cluster) DeploymentExists(ctx context.Context, namespace, deploymentNam
 			return false, err
 		}
 		return true, nil
-	}
-}
-
-func (c *Cluster) NamespaceDoesNotExist(ctx context.Context, namespaceName string) wait.ConditionFunc {
-	return func() (bool, error) {
-		exists, err := c.NamespaceExists(ctx, namespaceName)
-		return !exists, err
 	}
 }
 
@@ -347,17 +280,6 @@ func (c *Cluster) ListPods(ctx context.Context, namespace, selector string) (*v1
 	return podList, nil
 }
 
-// Wait up to timeout for Namespace to be removed.
-// Returns an error if the Namespace is not removed within the allotted time.
-func (c *Cluster) WaitForNamespaceMissing(ctx context.Context, ui *termui.UI, namespace string, timeout time.Duration) error {
-	if ui != nil {
-		s := ui.Progressf("Waiting for namespace %s to be deleted", namespace)
-		defer s.Stop()
-	}
-
-	return wait.PollImmediate(time.Second, timeout, c.NamespaceDoesNotExist(ctx, namespace))
-}
-
 // WaitForNamespace waits up to timeout for namespace to appear
 // Returns an error if the Namespace is not found within the allotted time.
 func (c *Cluster) WaitForNamespace(ctx context.Context, ui *termui.UI, namespace string, timeout time.Duration) error {
@@ -371,16 +293,6 @@ func (c *Cluster) WaitForNamespace(ctx context.Context, ui *termui.UI, namespace
 }
 
 // Wait up to timeout for pod to be removed.
-// Returns an error if the pod is not removed within the allotted time.
-func (c *Cluster) WaitForPodBySelectorMissing(ctx context.Context, ui *termui.UI, namespace, selector string, timeout time.Duration) error {
-	if ui != nil {
-		s := ui.Progressf("Removing %s in %s", selector, namespace)
-		defer s.Stop()
-	}
-
-	return wait.PollImmediate(time.Second, timeout, c.PodDoesNotExist(ctx, namespace, selector))
-}
-
 // WaitUntilDeploymentExist waits up to timeout for the specified deployment to exist.
 // The Deployment is specified by its name.
 func (c *Cluster) WaitUntilDeploymentExists(ctx context.Context, ui *termui.UI, namespace, deploymentName string, timeout time.Duration) error {
@@ -430,7 +342,7 @@ func (c *Cluster) WaitForPodBySelectorRunning(ctx context.Context, namespace, se
 			if err2 != nil {
 				return errors.Wrap(err, err2.Error())
 			}
-			return fmt.Errorf("Failed waiting for %s: %s\nPod Events: \n%s", pod.Name, err.Error(), events)
+			return fmt.Errorf("failed waiting for %s: %s\nPod Events: \n%s", pod.Name, err.Error(), events)
 		}
 	}
 	return nil
@@ -449,26 +361,9 @@ func (c *Cluster) WaitForPodBySelector(ctx context.Context, namespace, selector 
 	return nil
 }
 
-// GetPodEventsWithSelector tries to find a pod using the provided selector and
-// namespace. If found it returns the events on that Pod. If not found it returns
-// an error.
-// An equivalent kubectl command would look like this
-// (label selector being "app.kubernetes.io/name=container-registry"):
-//   kubectl get event --namespace my-namespace \
-//   --field-selector involvedObject.name=$( \
-//     kubectl get pods -o=jsonpath='{.items[0].metadata.name}' --selector=app.kubernetes.io/name=container-registry -n my-namespace)
-func (c *Cluster) GetPodEventsWithSelector(ctx context.Context, namespace, selector string) (string, error) {
-	podList, err := c.Kubectl.CoreV1().Pods(namespace).List(ctx,
-		metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return "", err
-	}
-	if len(podList.Items) < 1 {
-		return "", errors.Errorf("Couldn't find Pod with selector '%s' in namespace %s", selector, namespace)
-	}
-	podName := podList.Items[0].Name
-
-	return c.GetPodEvents(ctx, namespace, podName)
+// GetSecret gets a secret's values
+func (c *Cluster) GetSecret(ctx context.Context, namespace, name string) (*v1.Secret, error) {
+	return c.Kubectl.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 func (c *Cluster) GetPodEvents(ctx context.Context, namespace, podName string) (string, error) {
@@ -486,68 +381,6 @@ func (c *Cluster) GetPodEvents(ctx context.Context, namespace, podName string) (
 	}
 
 	return strings.Join(events, "\n"), nil
-}
-
-func (c *Cluster) Exec(namespace, podName, containerName string, command, stdin string) (string, string, error) {
-	var stdout, stderr bytes.Buffer
-	stdinput := bytes.NewBuffer([]byte(stdin))
-
-	err := c.execPod(namespace, podName, containerName, command, stdinput, &stdout, &stderr)
-
-	// if options.PreserveWhitespace {
-	// 	return stdout.String(), stderr.String(), err
-	// }
-	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), err
-}
-
-// GetSecret gets a secret's values
-func (c *Cluster) GetSecret(ctx context.Context, namespace, name string) (*v1.Secret, error) {
-	return c.Kubectl.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
-}
-
-// DeleteSecret removes a secret
-func (c *Cluster) DeleteSecret(ctx context.Context, namespace, name string) error {
-	err := c.Kubectl.CoreV1().Secrets(namespace).Delete(ctx, name, metav1.DeleteOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to delete secret")
-	}
-
-	return nil
-}
-
-// CreateSecret posts the specified secret to the cluster. All
-// configuration of the secret is done by the caller.
-func (c *Cluster) CreateSecret(ctx context.Context, namespace string, secret v1.Secret) error {
-	_, err := c.Kubectl.CoreV1().Secrets(namespace).Create(ctx,
-		&secret,
-		metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrapf(err, "failed to create secret %s", secret.Name)
-	}
-	return nil
-}
-
-// CreateLabeledSecret posts a new secret to the cluster. The secret
-// is constructed from name and a key/value dictionary for labels.
-func (c *Cluster) CreateLabeledSecret(ctx context.Context, namespace, name string,
-	data map[string][]byte,
-	label map[string]string) error {
-
-	secret := &v1.Secret{
-		Data: data,
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
-			Labels: label,
-		},
-	}
-	_, err := c.Kubectl.CoreV1().Secrets(namespace).Create(ctx,
-		secret,
-		metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to create secret")
-	}
-
-	return nil
 }
 
 // GetVersion get the kube server version
@@ -590,64 +423,6 @@ func (c *Cluster) ListIngress(ctx context.Context, namespace, selector string) (
 		return nil, err
 	}
 	return ingressList, nil
-}
-
-func (c *Cluster) execPod(namespace, podName, containerName string,
-	command string, stdin io.Reader, stdout, stderr io.Writer) error {
-	cmd := []string{
-		"sh",
-		"-c",
-		command,
-	}
-	req := c.Kubectl.CoreV1().RESTClient().Post().Resource("pods").Name(podName).
-		Namespace(namespace).SubResource("exec")
-	option := &v1.PodExecOptions{
-		Container: containerName,
-		Command:   cmd,
-		Stdin:     true,
-		Stdout:    true,
-		Stderr:    true,
-		TTY:       true,
-	}
-	if stdin == nil {
-		option.Stdin = false
-	}
-	req.VersionedParams(
-		option,
-		scheme.ParameterCodec,
-	)
-	exec, err := remotecommand.NewSPDYExecutor(c.RestConfig, "POST", req.URL())
-	if err != nil {
-		return err
-	}
-	err = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  stdin,
-		Stdout: stdout,
-		Stderr: stderr,
-	})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// NamespaceExistsAndOwned checks if the namespace exists
-// and is created by epinio or not.
-func (c *Cluster) NamespaceExistsAndOwned(ctx context.Context, namespaceName string) (bool, error) {
-	exists, err := c.NamespaceExists(ctx, namespaceName)
-	if err != nil {
-		return false, err
-	}
-	if !exists {
-		return false, nil
-	}
-
-	owned, err := c.NamespaceLabelExists(ctx, namespaceName, EpinioDeploymentLabelKey)
-	if err != nil {
-		return false, err
-	}
-	return owned, nil
 }
 
 // NamespaceExists checks if a namespace exists or not

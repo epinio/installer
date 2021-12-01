@@ -10,19 +10,9 @@ import (
 )
 
 const (
-	traefikIP           = 2 * time.Minute
-	appReady            = 2 * time.Minute
 	deployment          = 10 * time.Minute
-	namespaceDeletion   = 5 * time.Minute
-	serviceSecret       = 5 * time.Minute
-	serviceProvision    = 5 * time.Minute
 	serviceLoadBalancer = 5 * time.Minute
 	podReady            = 5 * time.Minute
-	appBuilt            = 10 * time.Minute
-	warmupJobReady      = 30 * time.Minute
-	certManagerReady    = 5 * time.Minute
-	kubedReady          = 5 * time.Minute
-	secretCopied        = 5 * time.Minute
 
 	// Fixed. __Not__ affected by the multiplier.
 	pollInterval = 3 * time.Second
@@ -45,76 +35,16 @@ func Multiplier() time.Duration {
 	return time.Duration(viper.GetInt("timeout-multiplier"))
 }
 
-// ToCertManagerReady returns the duration to wait until giving up on
-// the cert manager deployment to become ready.
-func ToCertManagerReady() time.Duration {
-	return Multiplier() * certManagerReady
-}
-
-// ToKubedReady returns the duration to wait until giving up on the
-// kube demon deployment to become ready.
-func ToKubedReady() time.Duration {
-	return Multiplier() * kubedReady
-}
-
-// ToSecretCopied returns the duration to wait until giving up on a
-// secret getting copied to complete.
-func ToSecretCopied() time.Duration {
-	return Multiplier() * secretCopied
-}
-
-// ToAppBuilt returns the duration to wait until giving up on the
-// application being built
-func ToAppBuilt() time.Duration {
-	return Multiplier() * appBuilt
-}
-
 // ToPodReady returns the duration to wait until giving up on getting
 // a system domain
 func ToPodReady() time.Duration {
 	return Multiplier() * podReady
 }
 
-// ToWarmupJobReady return the duration to wait until the builder image
-// warm up job is Complete. The time it takes for that Job to complete depends
-// on the network speed of the cluster so be generous here.
-func ToWarmupJobReady() time.Duration {
-	return Multiplier() * warmupJobReady
-}
-
-// ToTraefikIP returns the duration to wait until the Traefik service gets
-// a LoadBalancer IP address.
-func ToTraefikIP() time.Duration {
-	return Multiplier() * traefikIP
-}
-
-// ToAppReady returns the duration to wait until the curl request
-// on app url
-func ToAppReady() time.Duration {
-	return Multiplier() * appReady
-}
-
 // ToDeployment returns the duration to wait for parts of a deployment
 // to become ready
 func ToDeployment() time.Duration {
 	return Multiplier() * deployment
-}
-
-// ToNamespaceDeletion returns the duration to wait for deletion of namespace
-func ToNamespaceDeletion() time.Duration {
-	return Multiplier() * namespaceDeletion
-}
-
-// ToServiceSecret returns the duration to wait for the secret to a
-// catalog service binding to appear
-func ToServiceSecret() time.Duration {
-	return Multiplier() * serviceSecret
-}
-
-// ToServiceProvision returns the duration to wait for a catalog
-// service instance to be provisioned
-func ToServiceProvision() time.Duration {
-	return Multiplier() * serviceProvision
 }
 
 // ToServiceLoadBalancer
