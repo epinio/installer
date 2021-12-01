@@ -1,0 +1,39 @@
+---
+archives:
+  - name_template: 'epinio-{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    replacements:
+      amd64: x86_64
+    format: binary
+    format_overrides:
+      - goos: windows
+        format: zip
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: epinio-installer
+    main: ./cmd/epinio-installer/main.go
+    binary: epinio-installer
+    ldflags:
+      - -w -s
+      - -X "github.com/epinio/installer/internal/version.Version={{ .Tag }}"
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+      - arm
+
+changelog:
+  ## Delegate Changelog to release-drafter
+  skip: true
+
+env:
+  - CGO_ENABLED=0
+
+snapshot:
+  name_template: "{{ .Tag }}-next"
