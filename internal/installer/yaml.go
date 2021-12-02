@@ -15,6 +15,14 @@ import (
 )
 
 func yamlApply(log logr.Logger, c Component) error {
+	if c.Source.URL != "" {
+		return errors.New("URL not supported by YAML component")
+	}
+
+	if c.Source.Path == "" {
+		return errors.New("Empty path for YAML component")
+	}
+
 	path := c.Source.Path
 	if len(c.Values) > 0 {
 		var err error

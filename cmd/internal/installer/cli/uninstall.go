@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/epinio/epinio/helpers/tracelog"
+	"github.com/epinio/installer/internal/duration"
 	"github.com/epinio/installer/internal/installer"
 	"github.com/epinio/installer/internal/kubernetes"
 )
@@ -44,7 +45,8 @@ func uninstall(cmd *cobra.Command, args []string) error {
 
 	log.Info("plan", "components", p.String())
 
-	act := installer.NewUninstall(cluster, log)
+	ca := installer.NewComponentActions(cluster, log, duration.ToDeployment())
+	act := installer.NewUninstall(cluster, log, ca)
 
 	installer.ReverseWalk(ctx, m.Components, act)
 	if err != nil {
