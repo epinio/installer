@@ -41,6 +41,9 @@ type Component struct {
 	// Type is 'helm' or 'yaml'
 	Type ComponentType `json:"type" yaml:"type"`
 
+	// PreDelete checks make sure the component can be uninstalled
+	PreDelete []ComponentAction `json:"pre_delete_check,omitempty" yaml:"preDelete"`
+
 	// PreDeploy checks make sure the component can be installed
 	PreDeploy []ComponentAction `json:"pre_deploy_check,omitempty" yaml:"preDeploy"`
 

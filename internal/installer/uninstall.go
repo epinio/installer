@@ -12,12 +12,14 @@ import (
 type Uninstall struct {
 	cluster *kubernetes.Cluster
 	log     logr.Logger
+	ca      *ComponentActions
 }
 
 var _ Action = &Uninstall{}
 
-func NewUninstall(cluster *kubernetes.Cluster, log logr.Logger) *Uninstall {
+func NewUninstall(cluster *kubernetes.Cluster, log logr.Logger, ca *ComponentActions) *Uninstall {
 	return &Uninstall{
+		ca:      ca,
 		cluster: cluster,
 		log:     log,
 	}
@@ -26,6 +28,13 @@ func NewUninstall(cluster *kubernetes.Cluster, log logr.Logger) *Uninstall {
 func (u Uninstall) Apply(ctx context.Context, c Component) error {
 	log := u.log.WithValues("component", c.ID, "type", c.Type)
 	log.Info("apply uninstall")
+
+	for _, chk := range c.PreDelete {
+		log.V(2).Info("pre deploy", "checkType", string(chk.Type))
+		if err := u.ca.Run(ctx, c, chk); err != nil {
+			return err
+		}
+	}
 
 	switch c.Type {
 	case Helm:
