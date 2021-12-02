@@ -26,7 +26,7 @@ func (d dummy) Apply(ctx context.Context, c installer.Component) error {
 var _ = Describe("InstallManifest", func() {
 	Describe("Installing", func() {
 		It("Installs all components", func() {
-			m, err := installer.Load(assetPath("install-manifest.yml"))
+			m, err := installer.Load(assetPath("test-manifest.yml"))
 			Expect(err).ToNot(HaveOccurred())
 
 			plan, err := installer.BuildPlan(m.Components)
