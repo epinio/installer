@@ -21,12 +21,12 @@ builds:
       - -X "github.com/epinio/installer/internal/version.Version={{ .Tag }}"
     goos:
       - linux
-      - darwin
-      - windows
+      # - darwin
+      # - windows
     goarch:
       - amd64
-      - arm64
-      - arm
+      # - arm64
+      # - arm
 
 changelog:
   ## Delegate Changelog to release-drafter
@@ -75,6 +75,7 @@ dockers:
     - "--label=org.opencontainers.image.title=epinio-{{.ProjectName}}"
     - "--label=org.opencontainers.image.revision={{.FullCommit}}"
     - "--label=org.opencontainers.image.version={{.Version}}"
+    - "--label=org.opencontainers.image.source=https://github.com/OWNER/REPO"
     - "--build-arg=HELM_VERSION={{.Env.HELM_VERSION}}"
     - "--build-arg=HELM_CHECKSUM={{.Env.HELM_CHECKSUM}}"
     - "--build-arg=KUBECTL_VERSION={{.Env.KUBECTL_VERSION}}"
