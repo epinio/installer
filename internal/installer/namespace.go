@@ -25,8 +25,15 @@ func namespaceUpsert(ctx context.Context, cluster *kubernetes.Cluster, c Compone
 				return err
 			}
 
+			if ns.Labels == nil {
+				ns.Labels = map[string]string{}
+			}
 			for n, v := range labels {
 				ns.Labels[n] = v
+			}
+
+			if ns.Annotations == nil {
+				ns.Annotations = map[string]string{}
 			}
 			for n, v := range annotations {
 				ns.Annotations[n] = v
