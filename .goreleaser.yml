@@ -21,12 +21,12 @@ builds:
       - -X "github.com/epinio/installer/internal/version.Version={{ .Tag }}"
     goos:
       - linux
-      - darwin
-      - windows
+      # - darwin
+      # - windows
     goarch:
       - amd64
-      - arm64
-      - arm
+      # - arm64
+      # - arm
 
 changelog:
   ## Delegate Changelog to release-drafter
@@ -57,8 +57,8 @@ dockers:
     image_templates:
     #- "splatform/epinio-installer:{{ .Tag }}"
     #- "splatform/epinio-installer:latest"
-    - "ghcr.io/epinio/epinio-installer:latest"
     - "ghcr.io/epinio/epinio-installer:{{ .Tag }}"
+    - "ghcr.io/epinio/epinio-installer:latest"
 
     # Skips the docker push.
     #skip_push: "true"
