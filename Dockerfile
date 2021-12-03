@@ -1,8 +1,6 @@
 # Image used by the Epinio Wrapper Helm Chart
 # Helm and kubectl must be installed in, that's why it differs from epinio-server image
 ARG SERVER_IMAGE=registry.opensuse.org/opensuse/busybox
-ARG DIST_BINARY=dist/epinio-installer_linux_amd64/epinio-installer
-
 
 FROM opensuse/leap AS downloader
 ARG HELM_VERSION
@@ -24,8 +22,10 @@ RUN chmod +x /kubectl
 
 
 FROM $SERVER_IMAGE
+ARG DIST_BINARY=dist/epinio-installer_linux_amd64/epinio-installer
+
 COPY --from=downloader /helm /usr/local/bin/helm
 COPY --from=downloader /kubectl /usr/local/bin/kubectl
 # This works, because the image is built by goreleaser
 COPY ${DIST_BINARY} /usr/local/bin/epinio-installer
-COPY assets/installer /
+COPY assets/installer /assets/installer
