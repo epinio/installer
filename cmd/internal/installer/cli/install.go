@@ -47,7 +47,7 @@ func install(cmd *cobra.Command, args []string) error {
 	ca := installer.NewComponentActions(cluster, log, duration.ToDeployment())
 	act := installer.NewInstall(cluster, log, ca)
 
-	installer.Walk(ctx, m.Components, act)
+	err = installer.Walk(ctx, m.Components, act)
 	if err != nil {
 		return err
 	}

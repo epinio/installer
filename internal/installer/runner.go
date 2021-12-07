@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type Action interface {
@@ -12,7 +14,7 @@ type Action interface {
 }
 
 // Walk all the nodes, apply Action and wait for it to finish. Walk nodes in parallel, if parents ("needs") are done.
-func Walk(ctx context.Context, plan Components, action Action) {
+func Walk(ctx context.Context, plan Components, action Action) error {
 	done := map[DeploymentID]bool{}
 	running := map[DeploymentID]bool{}
 	for _, c := range plan {
@@ -20,7 +22,7 @@ func Walk(ctx context.Context, plan Components, action Action) {
 		running[c.ID] = false
 	}
 
-	wg := &sync.WaitGroup{}
+	g := new(errgroup.Group)
 	var lock = &sync.RWMutex{}
 	for !allDone(lock, done) {
 		for _, c := range plan {
@@ -43,28 +45,31 @@ func Walk(ctx context.Context, plan Components, action Action) {
 			}
 			lock.RUnlock()
 
-			//fmt.Printf("did not skip: %s\n", c.ID)
 			lock.Lock()
 			running[c.ID] = true
 			lock.Unlock()
 
-			wg.Add(1)
-			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
-
+			g.Go(func() error {
 				if err := action.Apply(ctx, c); err != nil {
-					fmt.Println(err)
-					os.Exit(-1)
+					fmt.Printf("error for '%s': %v\n", c.ID, err)
+					return err
 				}
 
 				lock.Lock()
 				done[c.ID] = true
 				lock.Unlock()
-			}(wg)
+
+				return nil
+			})
 		}
 	}
 
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		fmt.Println("failed to install all components")
+		return err
+	}
+
+	return nil
 }
 
 // ReverseWalk all the nodes, apply Action and wait for it to finish. Walk nodes in parallel, blocks if node still has running needers

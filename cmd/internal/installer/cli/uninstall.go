@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -49,9 +48,6 @@ func uninstall(cmd *cobra.Command, args []string) error {
 	act := installer.NewUninstall(cluster, log, ca)
 
 	installer.ReverseWalk(ctx, m.Components, act)
-	if err != nil {
-		return errors.Wrap(err, "failed to remove")
-	}
 
 	return nil
 }
