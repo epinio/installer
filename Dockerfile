@@ -1,6 +1,6 @@
 # Image used by the Epinio Wrapper Helm Chart
 # Helm and kubectl must be installed in, that's why it differs from epinio-server image
-ARG SERVER_IMAGE=registry.opensuse.org/opensuse/busybox
+ARG SERVER_IMAGE=splatform/epinio-server
 
 FROM opensuse/leap AS downloader
 ARG HELM_VERSION
