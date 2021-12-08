@@ -15,17 +15,26 @@ type Action interface {
 
 // Walk all the nodes, apply Action and wait for it to finish. Walk nodes in parallel, if parents ("needs") are done.
 func Walk(ctx context.Context, plan Components, action Action) error {
+	// access to these vars from the goroutines will need to be
+	// synchronized by RWMutex to avoid races
 	done := map[DeploymentID]bool{}
 	running := map[DeploymentID]bool{}
 	for _, c := range plan {
 		done[c.ID] = false
 		running[c.ID] = false
 	}
+	noErr := true
 
 	g := new(errgroup.Group)
-	var lock = &sync.RWMutex{}
-	for !allDone(lock, done) {
+	lock := &sync.RWMutex{}
+	processMore := func() bool {
+		lock.RLock()
+		defer lock.RUnlock()
+		return noErr
+	}
+	for !allDone(lock, done) && processMore() {
 		for _, c := range plan {
+			// avoid pointer capture
 			c := c
 			lock.RLock()
 			if done[c.ID] {
@@ -50,8 +59,13 @@ func Walk(ctx context.Context, plan Components, action Action) error {
 			lock.Unlock()
 
 			g.Go(func() error {
-				if err := action.Apply(ctx, c); err != nil {
+				err := action.Apply(ctx, c)
+				if err != nil {
 					fmt.Printf("error for '%s': %v\n", c.ID, err)
+					// don't start any more tasks, break the for loop
+					lock.Lock()
+					noErr = false
+					lock.Unlock()
 					return err
 				}
 
