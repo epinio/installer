@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -327,34 +326,55 @@ func (c *Cluster) WaitUntilPodBySelectorExist(ctx context.Context, namespace, se
 // with given 'selector' to enter running state. Returns an error if no pods are
 // found or not all discovered pods enter running state.
 func (c *Cluster) WaitForPodBySelectorRunning(ctx context.Context, namespace, selector string, timeout time.Duration) error {
-	podList, err := c.ListPods(ctx, namespace, selector)
-	if err != nil {
-		return errors.Wrapf(err, "failed listingpods with selector %s", selector)
-	}
+	return wait.PollImmediate(time.Second, timeout, c.ArePodsRunning(ctx, selector, namespace))
+}
 
-	if len(podList.Items) == 0 {
-		return fmt.Errorf("no pods in %s with selector %s", namespace, selector)
-	}
-
-	for _, pod := range podList.Items {
-		if err := c.WaitForPodRunning(ctx, namespace, pod.Name, timeout); err != nil {
-			events, err2 := c.GetPodEvents(ctx, namespace, pod.Name)
-			if err2 != nil {
-				return errors.Wrap(err, err2.Error())
-			}
-			return fmt.Errorf("failed waiting for %s: %s\nPod Events: \n%s", pod.Name, err.Error(), events)
+// ArePodsRunning checks that all pods are ready and running for this selector
+func (c *Cluster) ArePodsRunning(ctx context.Context, selector string, namespace string) wait.ConditionFunc {
+	return func() (bool, error) {
+		podList, err := c.ListPods(ctx, namespace, selector)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed listingpods with selector %s", selector)
 		}
+
+		// at least one pod must be running
+		if len(podList.Items) == 0 {
+			return false, nil
+		}
+
+		for _, pod := range podList.Items {
+			podReady := false
+			for _, condition := range pod.Status.Conditions {
+				if condition.Type == v1.PodReady {
+					podReady = condition.Status == v1.ConditionTrue
+					if !podReady {
+						// exit early, podReady conditions's status is false
+						return false, nil
+					}
+
+					// move to next pod, ignore other conditions
+					break
+				}
+			}
+			// exit early, in case the pod was missing the v1.PodReady condition
+			if !podReady {
+				return false, nil
+			}
+		}
+
+		return true, nil
 	}
-	return nil
 }
 
 // WaitForPodBySelector combines WaitUntilPodBySelectorExist and
 // WaitForPodBySelectorRunning, as one doesn't check if the pod is ready and
 // the other would fail immediately if the pod does not exist.
 func (c *Cluster) WaitForPodBySelector(ctx context.Context, namespace, selector string, timeout time.Duration) error {
+	// We might hit the deployment in the middle of a rollout. We can't know if this an old pod or a new pod.
 	if err := c.WaitUntilPodBySelectorExist(ctx, namespace, selector, timeout); err != nil {
 		return err
 	}
+	// But now some time has passed and we can make sure all pods are running
 	if err := c.WaitForPodBySelectorRunning(ctx, namespace, selector, timeout); err != nil {
 		return err
 	}
