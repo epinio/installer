@@ -67,6 +67,7 @@ rules:
   - delete
   - deletecollection
   - update
+  - patch
 - apiGroups:
   - ""
   resources:
@@ -145,6 +146,14 @@ rules:
   - servicemonitors
   verbs:
   - '*'
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - update
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -757,6 +766,45 @@ spec:
                           type: integer
                         value:
                           type: string
+                      type: object
+                    type: array
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
                       type: object
                     type: array
                 required:
@@ -1414,6 +1462,45 @@ spec:
                               type: string
                           type: object
                         type: array
+                      topologySpreadConstraints:
+                        items:
+                          properties:
+                            labelSelector:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                            maxSkew:
+                              format: int32
+                              type: integer
+                            topologyKey:
+                              type: string
+                            whenUnsatisfiable:
+                              type: string
+                          required:
+                          - maxSkew
+                          - topologyKey
+                          - whenUnsatisfiable
+                          type: object
+                        type: array
                       volumeClaimTemplate:
                         properties:
                           apiVersion:
@@ -1656,6 +1743,45 @@ spec:
                           type: integer
                         value:
                           type: string
+                      type: object
+                    type: array
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
                       type: object
                     type: array
                 type: object
@@ -2034,6 +2160,45 @@ spec:
                     type: string
                   storageClassName:
                     type: string
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
+                      type: object
+                    type: array
                 type: object
               requestAutoCert:
                 type: boolean
@@ -3984,6 +4149,8 @@ spec:
                   type: object
                 nullable: true
                 type: array
+              provisionedUsers:
+                type: boolean
               revision:
                 format: int32
                 type: integer
@@ -4586,6 +4753,45 @@ spec:
                           type: integer
                         value:
                           type: string
+                      type: object
+                    type: array
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
                       type: object
                     type: array
                 required:
@@ -5308,6 +5514,45 @@ spec:
                               type: string
                           type: object
                         type: array
+                      topologySpreadConstraints:
+                        items:
+                          properties:
+                            labelSelector:
+                              properties:
+                                matchExpressions:
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                      values:
+                                        items:
+                                          type: string
+                                        type: array
+                                    required:
+                                    - key
+                                    - operator
+                                    type: object
+                                  type: array
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                              type: object
+                            maxSkew:
+                              format: int32
+                              type: integer
+                            topologyKey:
+                              type: string
+                            whenUnsatisfiable:
+                              type: string
+                          required:
+                          - maxSkew
+                          - topologyKey
+                          - whenUnsatisfiable
+                          type: object
+                        type: array
                       volumeClaimTemplate:
                         properties:
                           apiVersion:
@@ -5550,6 +5795,45 @@ spec:
                           type: integer
                         value:
                           type: string
+                      type: object
+                    type: array
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
                       type: object
                     type: array
                 type: object
@@ -5943,6 +6227,45 @@ spec:
                             type: integer
                           value:
                             type: string
+                        type: object
+                      type: array
+                    topologySpreadConstraints:
+                      items:
+                        properties:
+                          labelSelector:
+                            properties:
+                              matchExpressions:
+                                items:
+                                  properties:
+                                    key:
+                                      type: string
+                                    operator:
+                                      type: string
+                                    values:
+                                      items:
+                                        type: string
+                                      type: array
+                                  required:
+                                  - key
+                                  - operator
+                                  type: object
+                                type: array
+                              matchLabels:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                          maxSkew:
+                            format: int32
+                            type: integer
+                          topologyKey:
+                            type: string
+                          whenUnsatisfiable:
+                            type: string
+                        required:
+                        - maxSkew
+                        - topologyKey
+                        - whenUnsatisfiable
                         type: object
                       type: array
                     volumeClaimTemplate:
@@ -6457,6 +6780,45 @@ spec:
                     type: string
                   storageClassName:
                     type: string
+                  topologySpreadConstraints:
+                    items:
+                      properties:
+                        labelSelector:
+                          properties:
+                            matchExpressions:
+                              items:
+                                properties:
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                  values:
+                                    items:
+                                      type: string
+                                    type: array
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                          type: object
+                        maxSkew:
+                          format: int32
+                          type: integer
+                        topologyKey:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
+                      type: object
+                    type: array
                 type: object
               prometheusOperator:
                 properties:
@@ -7990,6 +8352,8 @@ spec:
                   type: object
                 nullable: true
                 type: array
+              provisionedUsers:
+                type: boolean
               revision:
                 format: int32
                 type: integer
@@ -8051,12 +8415,11 @@ metadata:
   namespace: minio-operator
 spec:
   ports:
-  - name: http
-    port: 4222
   - name: https
-    port: 4233
+    port: 4222
   selector:
     name: minio-operator
+    operator: leader
   type: ClusterIP
 ---
 apiVersion: apps/v1
@@ -8082,11 +8445,21 @@ spec:
       labels:
         name: minio-operator
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: name
+                operator: In
+                values:
+                - minio-operator
+            topologyKey: kubernetes.io/hostname
       containers:
       - env:
         - name: CLUSTER_DOMAIN
           value: cluster.local
-        image: minio/operator:v4.2.12
+        image: minio/operator:v4.3.7
         imagePullPolicy: IfNotPresent
         name: minio-operator
         resources:
@@ -8099,3 +8472,345 @@ spec:
           runAsNonRoot: true
           runAsUser: 1000
       serviceAccountName: minio-operator
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  name: console-sa
+  namespace: minio-operator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  name: console-sa-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - watch
+  - create
+  - list
+  - patch
+  - update
+  - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - services
+  - events
+  - resourcequotas
+  - nodes
+  verbs:
+  - get
+  - watch
+  - create
+  - list
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - get
+  - watch
+  - create
+  - list
+  - patch
+  - delete
+  - deletecollection
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - deletecollection
+  - list
+  - get
+  - watch
+  - update
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - storageclasses
+  verbs:
+  - get
+  - watch
+  - create
+  - list
+  - patch
+- apiGroups:
+  - apps
+  resources:
+  - statefulsets
+  - deployments
+  verbs:
+  - get
+  - create
+  - list
+  - patch
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - get
+  - create
+  - list
+  - patch
+  - watch
+  - update
+  - delete
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  - certificatesigningrequests/approval
+  - certificatesigningrequests/status
+  verbs:
+  - update
+  - create
+  - get
+- apiGroups:
+  - minio.min.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - min.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumes
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshotcontents
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - csinodes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - storage.k8s.io
+  resources:
+  - volumeattachments
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - direct.csi.min.io
+  resources:
+  - volumes
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - direct.csi.min.io
+  resources:
+  - directcsidrives
+  - directcsivolumes
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - pod
+  - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  name: console-sa-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: console-sa-role
+subjects:
+- kind: ServiceAccount
+  name: console-sa
+  namespace: minio-operator
+---
+apiVersion: v1
+data:
+  CONSOLE_PORT: "9090"
+  CONSOLE_TLS_PORT: "9443"
+kind: ConfigMap
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  name: console-env
+  namespace: minio-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  labels:
+    name: console
+  name: console
+  namespace: minio-operator
+spec:
+  ports:
+  - name: http
+    port: 9090
+  - name: https
+    port: 9443
+  selector:
+    app: console
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    operator.min.io/authors: MinIO, Inc.
+    operator.min.io/license: AGPLv3
+    operator.min.io/support: https://subnet.min.io
+  name: console
+  namespace: minio-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console
+  template:
+    metadata:
+      annotations:
+        operator.min.io/authors: MinIO, Inc.
+        operator.min.io/license: AGPLv3
+        operator.min.io/support: https://subnet.min.io
+      labels:
+        app: console
+    spec:
+      containers:
+      - args:
+        - server
+        env:
+        - name: CONSOLE_OPERATOR_MODE
+          value: "on"
+        image: minio/console:v0.12.6
+        imagePullPolicy: IfNotPresent
+        name: console
+        ports:
+        - containerPort: 9090
+          name: http
+        - containerPort: 9433
+          name: https
+        securityContext:
+          runAsGroup: 1000
+          runAsNonRoot: true
+          runAsUser: 1000
+      serviceAccountName: console-sa

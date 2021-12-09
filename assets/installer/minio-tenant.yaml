@@ -16,7 +16,7 @@ spec:
   certConfig: {}
   credsSecret:
     name: tenant-creds
-  image: minio/minio:RELEASE.2021-10-06T23-36-31Z
+  image: minio/minio:RELEASE.2021-11-09T03-21-45Z
   imagePullSecret: {}
   mountPath: /export
   pools:
@@ -46,13 +46,36 @@ spec:
       status: {}
     volumesPerServer: 4
   requestAutoCert: false
+  users:
+  - name: tenant1-user-1
+status:
+  availableReplicas: 0
+  certificates: {}
+  currentState: ""
+  pools: null
+  revision: 0
+  syncVersion: ""
+  usage: {}
+
 ---
 apiVersion: v1
-kind: Secret
-type: Opaque
-metadata:
-  name: tenant-creds
-  namespace: minio-epinio
 stringData:
   accesskey: {{ .Values.accessKey }}
   secretkey: {{ .Values.secretKey }}
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: tenant-creds
+  namespace: minio-epinio
+
+---
+apiVersion: v1
+data:
+  CONSOLE_ACCESS_KEY: YWRtaW4=
+  CONSOLE_SECRET_KEY: YzhiMzJjYzgtZDdlMi00YmI4LTllOTItZTE2MWMyN2Y0MjI2
+kind: Secret
+metadata:
+  creationTimestamp: null
+  name: tenant1-user-1
+  namespace: minio-epinio
+
