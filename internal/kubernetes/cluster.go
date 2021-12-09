@@ -8,19 +8,15 @@ import (
 	"github.com/pkg/errors"
 
 	kubeconfig "github.com/epinio/epinio/helpers/kubernetes/config"
-	"github.com/epinio/epinio/helpers/termui"
 
 	appsv1 "k8s.io/api/apps/v1"
 	apibatchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	typedbatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1"
 	restclient "k8s.io/client-go/rest"
@@ -33,8 +29,6 @@ import (
 var clusterMemo *Cluster
 
 type Cluster struct {
-	//	InternalIPs []string
-	//	Ingress     bool
 	Kubectl    *kubernetes.Clientset
 	RestConfig *restclient.Config
 }
@@ -71,70 +65,6 @@ func GetCluster(ctx context.Context) (*Cluster, error) {
 	return clusterMemo, nil
 }
 
-// ClientCertManager returns a dynamic namespaced client for the cert manager resource
-func (c *Cluster) ClientCertManager() (dynamic.NamespaceableResourceInterface, error) {
-	gvr := schema.GroupVersionResource{
-		Group:    "cert-manager.io",
-		Version:  "v1",
-		Resource: "clusterissuers",
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(c.RestConfig)
-	if err != nil {
-		return nil, err
-	}
-	return dynamicClient.Resource(gvr), nil
-}
-
-// IsPodRunning returns a condition function that indicates whether the given pod is
-// currently running
-func (c *Cluster) IsPodRunning(ctx context.Context, podName, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
-		pod, err := c.Kubectl.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		for _, condition := range pod.Status.Conditions {
-			if condition.Type == v1.PodReady && condition.Status == v1.ConditionTrue {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-}
-
-// IsJobCompleted returns a condition function that indicates whether the given
-// Job is in Completed state.
-func (c *Cluster) IsJobCompleted(ctx context.Context, client *typedbatchv1.BatchV1Client, jobName, namespace string) wait.ConditionFunc {
-	return func() (bool, error) {
-		job, err := client.Jobs(namespace).Get(ctx, jobName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-
-		for _, condition := range job.Status.Conditions {
-			if condition.Type == apibatchv1.JobComplete && condition.Status == v1.ConditionTrue {
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-}
-
-func (c *Cluster) PodExists(ctx context.Context, namespace, selector string) wait.ConditionFunc {
-	return func() (bool, error) {
-		podList, err := c.ListPods(ctx, namespace, selector)
-		if err != nil {
-			return false, err
-		}
-		if len(podList.Items) == 0 {
-			return false, nil
-		}
-		return true, nil
-	}
-}
-
 func (c *Cluster) DeploymentExists(ctx context.Context, namespace, deploymentName string) wait.ConditionFunc {
 	return func() (bool, error) {
 		_, err := c.Kubectl.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
@@ -143,19 +73,6 @@ func (c *Cluster) DeploymentExists(ctx context.Context, namespace, deploymentNam
 				return false, nil
 			}
 			return false, err
-		}
-		return true, nil
-	}
-}
-
-func (c *Cluster) PodDoesNotExist(ctx context.Context, namespace, selector string) wait.ConditionFunc {
-	return func() (bool, error) {
-		podList, err := c.ListPods(ctx, namespace, selector)
-		if err != nil {
-			return true, nil
-		}
-		if len(podList.Items) > 0 {
-			return false, nil
 		}
 		return true, nil
 	}
@@ -203,6 +120,32 @@ func (c *Cluster) WaitForCRD(ctx context.Context, CRDName string, timeout time.D
 	})
 }
 
+// IsJobCompleted returns a condition function that indicates whether the given
+// Job is in Completed state.
+func (c *Cluster) IsJobCompleted(ctx context.Context, client *typedbatchv1.BatchV1Client, jobName, namespace string) wait.ConditionFunc {
+	return func() (bool, error) {
+		job, err := client.Jobs(namespace).Get(ctx, jobName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		for _, condition := range job.Status.Conditions {
+			if condition.Type == apibatchv1.JobComplete && condition.Status == v1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+}
+
+func (c *Cluster) WaitForJobCompleted(ctx context.Context, namespace, jobName string, timeout time.Duration) error {
+	client, err := typedbatchv1.NewForConfig(c.RestConfig)
+	if err != nil {
+		return err
+	}
+	return wait.PollImmediate(time.Second, timeout, c.IsJobCompleted(ctx, client, jobName, namespace))
+}
+
 // WaitForSecret waits until the specified secret exists. If timeout is reached,
 // an error is returned.
 // It should be used when something is expected to create a Secret and the code
@@ -224,20 +167,6 @@ func (c *Cluster) WaitForSecret(ctx context.Context, namespace, secretName strin
 	return secret, waitErr
 }
 
-// Poll up to timeout for pod to enter running state.
-// Returns an error if the pod never enters the running state.
-func (c *Cluster) WaitForPodRunning(ctx context.Context, namespace, podName string, timeout time.Duration) error {
-	return wait.PollImmediate(time.Second, timeout, c.IsPodRunning(ctx, podName, namespace))
-}
-
-func (c *Cluster) WaitForJobCompleted(ctx context.Context, namespace, jobName string, timeout time.Duration) error {
-	client, err := typedbatchv1.NewForConfig(c.RestConfig)
-	if err != nil {
-		return err
-	}
-	return wait.PollImmediate(time.Second, timeout, c.IsJobCompleted(ctx, client, jobName, namespace))
-}
-
 // IsDeploymentCompleted returns a condition function that indicates whether the given
 // Deployment is in Completed state or not.
 func (c *Cluster) IsDeploymentCompleted(ctx context.Context, deploymentName, namespace string) wait.ConditionFunc {
@@ -257,12 +186,7 @@ func (c *Cluster) IsDeploymentCompleted(ctx context.Context, deploymentName, nam
 	}
 }
 
-func (c *Cluster) WaitForDeploymentCompleted(ctx context.Context, ui *termui.UI, namespace, deploymentName string, timeout time.Duration) error {
-	if ui != nil {
-		s := ui.Progressf("Waiting for deployment %s in %s to be ready", deploymentName, namespace)
-		defer s.Stop()
-	}
-
+func (c *Cluster) WaitForDeploymentCompleted(ctx context.Context, namespace string, deploymentName string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, c.IsDeploymentCompleted(ctx, deploymentName, namespace))
 }
 
@@ -281,10 +205,7 @@ func (c *Cluster) ListPods(ctx context.Context, namespace, selector string) (*v1
 
 // WaitForNamespace waits up to timeout for namespace to appear
 // Returns an error if the Namespace is not found within the allotted time.
-func (c *Cluster) WaitForNamespace(ctx context.Context, ui *termui.UI, namespace string, timeout time.Duration) error {
-	s := ui.Progressf("Waiting for namespace %s to be appear", namespace)
-	defer s.Stop()
-
+func (c *Cluster) WaitForNamespace(ctx context.Context, namespace string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
 		exists, err := c.NamespaceExists(ctx, namespace)
 		return exists, err
@@ -294,10 +215,7 @@ func (c *Cluster) WaitForNamespace(ctx context.Context, ui *termui.UI, namespace
 // Wait up to timeout for pod to be removed.
 // WaitUntilDeploymentExist waits up to timeout for the specified deployment to exist.
 // The Deployment is specified by its name.
-func (c *Cluster) WaitUntilDeploymentExists(ctx context.Context, ui *termui.UI, namespace, deploymentName string, timeout time.Duration) error {
-	s := ui.Progressf("Waiting for deployment %s in %s to appear", deploymentName, namespace)
-	defer s.Stop()
-
+func (c *Cluster) WaitUntilDeploymentExists(ctx context.Context, namespace, deploymentName string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, c.DeploymentExists(ctx, namespace, deploymentName))
 }
 
@@ -316,16 +234,10 @@ func (c *Cluster) WaitUntilServiceHasLoadBalancer(ctx context.Context, namespace
 	})
 }
 
-// Wait up to timeout for all pods in 'namespace' with given 'selector' to enter running state.
-// Returns an error if no pods are found or not all discovered pods enter running state.
-func (c *Cluster) WaitUntilPodBySelectorExist(ctx context.Context, namespace, selector string, timeout time.Duration) error {
-	return wait.PollImmediate(time.Second, timeout, c.PodExists(ctx, namespace, selector))
-}
-
 // WaitForPodBySelectorRunning waits timeout for all pods in 'namespace'
 // with given 'selector' to enter running state. Returns an error if no pods are
 // found or not all discovered pods enter running state.
-func (c *Cluster) WaitForPodBySelectorRunning(ctx context.Context, namespace, selector string, timeout time.Duration) error {
+func (c *Cluster) WaitForPodBySelector(ctx context.Context, namespace, selector string, timeout time.Duration) error {
 	return wait.PollImmediate(time.Second, timeout, c.ArePodsRunning(ctx, selector, namespace))
 }
 
@@ -366,21 +278,6 @@ func (c *Cluster) ArePodsRunning(ctx context.Context, selector string, namespace
 	}
 }
 
-// WaitForPodBySelector combines WaitUntilPodBySelectorExist and
-// WaitForPodBySelectorRunning, as one doesn't check if the pod is ready and
-// the other would fail immediately if the pod does not exist.
-func (c *Cluster) WaitForPodBySelector(ctx context.Context, namespace, selector string, timeout time.Duration) error {
-	// We might hit the deployment in the middle of a rollout. We can't know if this an old pod or a new pod.
-	if err := c.WaitUntilPodBySelectorExist(ctx, namespace, selector, timeout); err != nil {
-		return err
-	}
-	// But now some time has passed and we can make sure all pods are running
-	if err := c.WaitForPodBySelectorRunning(ctx, namespace, selector, timeout); err != nil {
-		return err
-	}
-	return nil
-}
-
 // GetSecret gets a secret's values
 func (c *Cluster) GetSecret(ctx context.Context, namespace, name string) (*v1.Secret, error) {
 	return c.Kubectl.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
@@ -411,38 +308,6 @@ func (c *Cluster) GetVersion() (string, error) {
 	}
 
 	return v.String(), nil
-}
-
-// ListIngressRoutes returns a list of all routes for ingresses in `namespace` with the given selector
-func (c *Cluster) ListIngressRoutes(ctx context.Context, namespace, name string) ([]string, error) {
-	ingress, err := c.Kubectl.NetworkingV1().Ingresses(namespace).Get(
-		ctx, name, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list ingresses")
-	}
-
-	result := []string{}
-
-	for _, rule := range ingress.Spec.Rules {
-		result = append(result, rule.Host)
-	}
-
-	return result, nil
-}
-
-// ListIngress returns the list of available ingresses in `namespace` with the given selector
-func (c *Cluster) ListIngress(ctx context.Context, namespace, selector string) (*networkingv1.IngressList, error) {
-	listOptions := metav1.ListOptions{}
-	if len(selector) > 0 {
-		listOptions.LabelSelector = selector
-	}
-
-	// TODO: Switch to networking v1 when we don't care about <1.18 clusters
-	ingressList, err := c.Kubectl.NetworkingV1().Ingresses(namespace).List(ctx, listOptions)
-	if err != nil {
-		return nil, err
-	}
-	return ingressList, nil
 }
 
 // NamespaceExists checks if a namespace exists or not
@@ -518,34 +383,4 @@ func (c *Cluster) UpdateNamespace(ctx context.Context, name string, labels map[s
 	)
 
 	return err
-}
-
-// ClusterIssuerExists checks if the resource exists
-func (c *Cluster) ClusterIssuerExists(ctx context.Context, name string) (bool, error) {
-	client, err := c.ClientCertManager()
-	if err != nil {
-		return false, err
-	}
-
-	_, err = client.Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
-}
-
-// WaitForClusterIssuer waits up to timeout for ClusterIssuer to exist
-func (c *Cluster) WaitForClusterIssuer(ctx context.Context, ui *termui.UI, name string, timeout time.Duration) error {
-	if ui != nil {
-		s := ui.Progressf("Waiting for ClusterIssuer '%s'", name)
-		defer s.Stop()
-	}
-
-	return wait.PollImmediate(time.Second, timeout, func() (bool, error) {
-		exists, err := c.ClusterIssuerExists(ctx, name)
-		return exists, err
-	})
 }
