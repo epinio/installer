@@ -41,6 +41,9 @@ type Component struct {
 	// Type is 'helm' or 'yaml'
 	Type ComponentType `json:"type" yaml:"type"`
 
+	// PreUpgrade checks make sure the component can be upgraded
+	PreUpgrade []ComponentAction `json:"pre_upgrade_check,omitempty" yaml:"preUpgrade"`
+
 	// PreDelete checks make sure the component can be uninstalled
 	PreDelete []ComponentAction `json:"pre_delete_check,omitempty" yaml:"preDelete"`
 

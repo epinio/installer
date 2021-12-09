@@ -55,6 +55,7 @@ func init() {
 
 	rootCmd.AddCommand(CmdInstall)
 	rootCmd.AddCommand(CmdUninstall)
+	rootCmd.AddCommand(CmdUpgrade)
 	rootCmd.AddCommand(cmdVersion)
 }
 

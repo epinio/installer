@@ -13,6 +13,19 @@ type Action interface {
 	Apply(context.Context, Component) error
 }
 
+// WalkSerially walks through the nodes, applies Action and waits for it to finish.
+// Walks nodes in sequencially (as opposed to "Walk").
+func WalkSerially(ctx context.Context, plan Components, action Action) error {
+	for _, c := range plan {
+		err := action.Apply(ctx, c)
+		if err != nil {
+			fmt.Printf("error for '%s': %v\n", c.ID, err)
+			return err
+		}
+	}
+	return nil
+}
+
 // Walk all the nodes, apply Action and wait for it to finish. Walk nodes in parallel, if parents ("needs") are done.
 func Walk(ctx context.Context, plan Components, action Action) error {
 	// access to these vars from the goroutines will need to be
