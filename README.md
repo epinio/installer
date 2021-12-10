@@ -1,3 +1,5 @@
+![test workflow](https://github.com/epinio/installer/actions/workflows/test.yml/badge.svg)
+
 # epinio-installer
 
 A declarative installer for Kubernetes that can install Epinio and its dependencies.
