@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+    - 'README.md'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+    - 'README.md'
+
+env:
+  SETUP_GO_VERSION: '^1.17.2'
+
+jobs:
+  # Check if there any dirty change for go mod tidy
+  go-mod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.SETUP_GO_VERSION }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Check go mod
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod
+
+  golangci-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.SETUP_GO_VERSION }}
+      - uses: actions/checkout@v2
+      - name: lint
+        uses: golangci/golangci-lint-action@v2.5.2
+        with:
+          version: latest
+          # skip cache because of flaky behaviors
+          skip-build-cache: true
+          skip-pkg-cache: true
+
+          # Optional: if set to true then the action will use pre-installed Go.
+          skip-go-installation: true
+          args: --timeout=4m0s
