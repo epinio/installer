@@ -11,10 +11,14 @@ import (
 )
 
 // KubeConfigFlags adds a kubeconfig flag to the set
-func KubeConfigFlags(pf *pflag.FlagSet, argToEnv map[string]string) {
+func KubeConfigFlags(pf *pflag.FlagSet, argToEnv map[string]string) error {
 	pf.StringP("kubeconfig", "c", "", "path to a kubeconfig, not required in-cluster")
-	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
+	if err := viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig")); err != nil {
+		return err
+	}
 	argToEnv["kubeconfig"] = "KUBECONFIG"
+
+	return nil
 }
 
 // KubeConfig uses kubeconfig pkg to return a valid kube config

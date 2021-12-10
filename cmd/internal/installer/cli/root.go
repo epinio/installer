@@ -39,18 +39,19 @@ func init() {
 	argToEnv := map[string]string{}
 
 	pf.StringP("manifest", "m", "epinio-install.yml", "set path of configuration file")
-	viper.BindPFlag("manifest", pf.Lookup("manifest"))
+	_ = viper.BindPFlag("manifest", pf.Lookup("manifest"))
 	argToEnv["manifest"] = "EPINIO_MANIFEST"
 
-	config.KubeConfigFlags(pf, argToEnv)
+	_ = config.KubeConfigFlags(pf, argToEnv)
+
 	tracelog.LoggerFlags(pf, argToEnv)
-	duration.Flags(pf, argToEnv)
+	_ = duration.Flags(pf, argToEnv)
 
 	pf.BoolP("no-colors", "", false, "Suppress colorized output")
-	viper.BindPFlag("no-colors", pf.Lookup("no-colors"))
+	_ = viper.BindPFlag("no-colors", pf.Lookup("no-colors"))
 	argToEnv["colors"] = "EPINIO_COLORS"
 
-	config.AddEnvToUsage(rootCmd, argToEnv)
+	_ = config.AddEnvToUsage(rootCmd, argToEnv)
 
 	rootCmd.AddCommand(CmdInstall)
 	rootCmd.AddCommand(CmdUninstall)

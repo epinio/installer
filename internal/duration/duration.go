@@ -24,10 +24,15 @@ const (
 )
 
 // Flags adds to viper flags
-func Flags(pf *flag.FlagSet, argToEnv map[string]string) {
+func Flags(pf *flag.FlagSet, argToEnv map[string]string) error {
 	pf.IntP("timeout-multiplier", "", 1, "Multiply timeouts by this factor")
-	viper.BindPFlag("timeout-multiplier", pf.Lookup("timeout-multiplier"))
+	if err := viper.BindPFlag("timeout-multiplier", pf.Lookup("timeout-multiplier")); err != nil {
+		return err
+	}
+
 	argToEnv["timeout-multiplier"] = "EPINIO_TIMEOUT_MULTIPLIER"
+
+	return nil
 }
 
 // Multiplier returns the currently active timeout multiplier value
