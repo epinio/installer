@@ -1,4 +1,4 @@
-name: Linting
+name: Tests
 
 on:
   push:
@@ -48,3 +48,20 @@ jobs:
           # Optional: if set to true then the action will use pre-installed Go.
           skip-go-installation: true
           args: --timeout=4m0s
+
+  unit-tests:
+    needs: [go-mod, golangci-lint]
+    if: ${{ (needs.go-mod.result == 'success' || needs.golangci-lint.result == 'success') && always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.SETUP_GO_VERSION }}
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Ginkgo Test Framework
+        run: go install github.com/onsi/ginkgo/ginkgo@v1.16.2
+      - name: Unit tests
+        run:
+          ginkgo -r -p race -failOnPending internal/.
