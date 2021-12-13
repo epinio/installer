@@ -102,7 +102,7 @@ components:
     type: helm
     source:
       name: epinio
-      url: https://github.com/epinio/epinio-helm-chart/releases/download/epinio-0.1.21/epinio-0.1.21.tgz
+      url: https://github.com/epinio/helm-charts/releases/download/epinio-0.1.21/epinio-0.1.21.tgz
     values:
       - name: email
         value: "epinio@epinio.io"
@@ -173,7 +173,7 @@ components:
     type: helm
     source:
       name: epinio-registry
-      url: https://github.com/epinio/epinio-helm-chart/releases/download/container-registry-0.1.0/container-registry-0.1.0.tgz
+      url: https://github.com/epinio/helm-charts/releases/download/container-registry-0.1.0/container-registry-0.1.0.tgz
     values:
       - name: domain
         value: epinio-registry.10.86.4.38.omg.howdoi.website
