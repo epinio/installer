@@ -1,6 +1,4 @@
 # Image used by the Epinio Wrapper Helm Chart
-# Helm and kubectl must be installed in, that's why it differs from epinio-server image
-ARG SERVER_IMAGE=splatform/epinio-server
 
 FROM opensuse/leap AS downloader
 ARG HELM_VERSION
@@ -20,8 +18,7 @@ RUN wget https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN sh -c 'echo "${KUBECTL_CHECKSUM} /kubectl" | sha256sum -w -c'
 RUN chmod +x /kubectl
 
-
-FROM $SERVER_IMAGE
+FROM opensuse/leap
 ARG DIST_BINARY=dist/epinio-installer_linux_amd64/epinio-installer
 
 COPY --from=downloader /helm /usr/local/bin/helm
