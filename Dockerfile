@@ -25,4 +25,3 @@ COPY --from=downloader /helm /usr/local/bin/helm
 COPY --from=downloader /kubectl /usr/local/bin/kubectl
 # This works, because the image is built by goreleaser
 COPY ${DIST_BINARY} /usr/local/bin/epinio-installer
-COPY assets/installer /assets/installer

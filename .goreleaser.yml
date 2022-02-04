@@ -41,7 +41,7 @@ snapshot:
 dockers:
   -
     # ID of the image, needed if you want to filter by it later on (e.g. on custom publishers).
-    id: epinio-installer
+    id: epinio-installer-noassets
 
     # GOOS of the built binaries/packages that should be used.
     goos: linux
@@ -55,10 +55,8 @@ dockers:
 
     # Templates of the Docker image names.
     image_templates:
-    #- "splatform/epinio-installer:{{ .Tag }}"
-    #- "splatform/epinio-installer:latest"
-    - "ghcr.io/epinio/epinio-installer:{{ .Tag }}"
-    - "ghcr.io/epinio/epinio-installer:latest"
+    - "ghcr.io/epinio/epinio-installer-noassets:{{ .Tag }}"
+    - "ghcr.io/epinio/epinio-installer-noassets:latest"
 
     # Skips the docker push.
     #skip_push: "true"
@@ -82,15 +80,3 @@ dockers:
     - "--build-arg=KUBECTL_CHECKSUM={{.Env.KUBECTL_CHECKSUM}}"
     - "--build-arg=DIST_BINARY=epinio-installer"
     - "--platform=linux/amd64"
-
-    # If your Dockerfile copies files other than binaries and packages,
-    # you should list them here as well.
-    # Note that GoReleaser will create the same structure inside a temporary
-    # folder, so if you add `foo/bar.json` here, on your Dockerfile you can
-    # `COPY foo/bar.json /whatever.json`.
-    # Also note that the paths here are relative to the folder in which
-    # GoReleaser is being run (usually the repository root folder).
-    # This field does not support wildcards, you can add an entire folder here
-    # and use wildcards when you `COPY`/`ADD` in your Dockerfile.
-    extra_files:
-    - assets/installer
