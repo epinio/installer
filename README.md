@@ -1,3 +1,6 @@
+**This is no longer a supported method of installation for Epinio. Check https://epinio.io/ to find the supported installation method**
+
+
 ![test workflow](https://github.com/epinio/installer/actions/workflows/test.yml/badge.svg)
 
 # epinio-installer
